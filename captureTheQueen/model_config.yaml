@@ -1,0 +1,6 @@
+num_filters: 128
+num_residual_blocks: 10
+se_ratio: 8
+policy_loss_weight: 1.0
+value_loss_weight: 1.6
+q_ratio: 0.2
