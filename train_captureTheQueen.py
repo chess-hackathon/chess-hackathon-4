@@ -23,8 +23,11 @@ from cycling_utils import (
 )
 
 from utils.optimizers import Lamb
-from utils.datasets import EVAL_HDF_Dataset
-from model import Model
+#from utils.datasets import EVAL_HDF_Dataset
+#from model import Model
+from pt_net import LeelaZeroNet
+
+from leela_dataset import LeelaDatasetReduced
 
 timer.report("Completed imports")
 
@@ -73,7 +76,7 @@ def main(args, timer):
     timer.report("Validated checkpoint path")
 
     data_path = "/data"
-    dataset = EVAL_HDF_Dataset(data_path)
+    dataset = LeelaDatasetReduced(data_path)
     timer.report(f"Intitialized dataset with {len(dataset):,} Board Evaluations.")
 
     random_generator = torch.Generator().manual_seed(42)
@@ -89,7 +92,7 @@ def main(args, timer):
     if args.device_id == 0:
         print(f"ModelConfig: {model_config}")
     model_config["device"] = 'cuda'
-    model = Model(**model_config)
+    model = LeelaZeroNet(**model_config)
     model = model.to(args.device_id)
 
     model_parameters = filter(lambda p: p.requires_grad, model.parameters())
@@ -99,7 +102,7 @@ def main(args, timer):
     model = DDP(model, device_ids=[args.device_id])
     timer.report("Prepared model for distributed training")
 
-    loss_fn = nn.MSELoss()
+    #loss_fn = nn.MSELoss()
     optimizer = Lamb(model.parameters(), lr=args.lr, weight_decay=args.wd)
     metrics = {"train": MetricsTracker(), "test": MetricsTracker()}
 

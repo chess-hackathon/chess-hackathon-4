@@ -1,0 +1,8 @@
+isc_project_id = "b67fd96e-6f45-4ce8-85c7-7a04c4e225fa"
+experiment_name = "leela"
+gpu_type = "24GB VRAM GPU"
+gpus = 48
+output_path = "~/outputs/leela"
+dataset_id = "45c8eb45-0b59-4692-b458-c9d91c5736c8"
+compute_mode = "cycle"
+command = "source ~/.chess/bin/activate && cd ~/chess-hackathon-4/ && torchrun --nnodes=$NNODES --nproc-per-node=$N_PROC --master_addr=$MASTER_ADDR --master_port=$MASTER_PORT --node_rank=$RANK train_captureTheQueen.py"
