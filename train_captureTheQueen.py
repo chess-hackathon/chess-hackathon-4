@@ -75,7 +75,7 @@ def main(args, timer):
     saver = AtomicDirectory(args.save_dir)
     timer.report("Validated checkpoint path")
 
-    data_path = "/data"
+    data_path = "/root/data"
     dataset = LeelaDatasetReduced(data_path)
     timer.report(f"Intitialized dataset with {len(dataset):,} Board Evaluations.")
 
@@ -103,7 +103,8 @@ def main(args, timer):
     timer.report("Prepared model for distributed training")
 
     #loss_fn = nn.MSELoss()
-    optimizer = Lamb(model.parameters(), lr=args.lr, weight_decay=args.wd)
+    #optimizer = Lamb(model.parameters(), lr=args.lr, weight_decay=args.wd)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     metrics = {"train": MetricsTracker(), "test": MetricsTracker()}
 
     checkpoint_path = None
@@ -147,7 +148,10 @@ def main(args, timer):
                     checkpoint_directory = saver.prepare_checkpoint_directory()
 
                 inputs, policy, q = inputs.to(args.device_id), policy.to(args.device_id), q.to(args.device_id)
-                loss = model.training_step((inputs,policy,q), None) / args.grad_accum
+                loss, _, policy_loss, value_out, value_loss = model.module.training_step((inputs,policy,q), None)
+                loss = loss / args.grad_accum
+                policy_loss = policy_loss / args.grad_accum
+                value_loss = value_loss / args.grad_accum
                 ##scores = logish_transform(scores) # suspect this might help
                 ##boards, scores = boards.to(args.device_id), scores.to(args.device_id)
 
@@ -159,12 +163,17 @@ def main(args, timer):
                 train_dataloader.sampler.advance(len(inputs))
 
                 # How accurately do our model scores rank the batch of moves? 
-                ##rank_corr = spearmans_rho(logits, scores)
+                if is_accum_batch or is_last_batch:
+                    rank_corr = spearmans_rho(value_out[:,0], q[:,0])
+                else:
+                    rank_corr = 0
 
                 metrics["train"].update({
                     "examples_seen": len(inputs),
                     "accum_loss": loss.item() * args.grad_accum, 
-                    #"rank_corr": rank_corr
+                    "accum_policy_loss": policy_loss.item() * args.grad_accum, 
+                    "accum_value_loss": value_loss.item() * args.grad_accum, 
+                    "rank_corr": rank_corr
                 })
 
                 if is_accum_batch or is_last_batch:
@@ -180,10 +189,12 @@ def main(args, timer):
                     metrics["train"].reduce()
                     rpt = metrics["train"].local
                     avg_loss = rpt["accum_loss"] / rpt["examples_seen"]
-                    #rpt_rank_corr = 100 * rpt["rank_corr"] / rpt["examples_seen"]
+                    avg_policy_loss = rpt["accum_policy_loss"] / rpt["examples_seen"]
+                    avg_value_loss = rpt["accum_value_loss"] / rpt["examples_seen"]
+                    rpt_rank_corr = 100 * rpt["rank_corr"] / rpt["examples_seen"]
                     report = f"""\
 Epoch [{epoch:,}] Step [{step:,} / {train_steps_per_epoch:,}] Batch [{batch:,} / {train_batches_per_epoch:,}] Lr: [{lr_factor * args.lr:,.3}], \
-Avg Loss [{avg_loss:,.3f}], Examples: {rpt['examples_seen']:,.0f}"""
+Avg Loss [{avg_loss:,.6f}], Avg Policy Loss [{avg_policy_loss:,.6f}], Avg Value Loss [{avg_value_loss:,.6f}], Rank Corr.: [{rpt_rank_corr:,.3f}%], Examples: {rpt['examples_seen']:,.0f}"""
                     timer.report(report)
                     metrics["train"].reset_local()
 
@@ -225,16 +236,21 @@ Avg Loss [{avg_loss:,.3f}], Examples: {rpt['examples_seen']:,.0f}"""
                         inputs, policy, q = inputs.to(args.device_id), policy.to(args.device_id), q.to(args.device_id)
                         #logits = model(boards)
                         #loss = loss_fn(logits, scores)
-                        loss = model.training_step((inputs,policy,q), None) / args.grad_accum
+                        loss, _, policy_loss, value_out, value_loss = model.module.training_step((inputs,policy,q), None)
+                        loss = loss / args.grad_accum
+                        policy_loss = policy_loss / args.grad_accum
+                        value_loss = value_loss / args.grad_accum
                         test_dataloader.sampler.advance(len(inputs))
 
                         # How accurately do our model scores rank the batch of moves? 
-                        #rank_corr = spearmans_rho(logits, scores)
+                        rank_corr = spearmans_rho(value_out[:,0], q[:,0])
 
                         metrics["test"].update({
                             "examples_seen": len(inputs),
                             "accum_loss": loss.item() * args.grad_accum, 
-                            #"rank_corr": rank_corr
+                            "accum_policy_loss": policy_loss.item() * args.grad_accum, 
+                            "accum_value_loss": value_loss.item() * args.grad_accum, 
+                            "rank_corr": rank_corr
                         })
                         
                         # Reporting
@@ -243,8 +259,10 @@ Avg Loss [{avg_loss:,.3f}], Examples: {rpt['examples_seen']:,.0f}"""
                             metrics["test"].reduce()
                             rpt = metrics["test"].local
                             avg_loss = rpt["accum_loss"] / rpt["examples_seen"]
-                            #rpt_rank_corr = 100 * rpt["rank_corr"] / rpt["examples_seen"]
-                            report = f"Epoch [{epoch}] Evaluation, Avg Loss [{avg_loss:,.3f}]"
+                            avg_policy_loss = rpt["accum_policy_loss"] / rpt["examples_seen"]
+                            avg_value_loss = rpt["accum_value_loss"] / rpt["examples_seen"]
+                            rpt_rank_corr = 100 * rpt["rank_corr"] / rpt["examples_seen"]
+                            report = f"Epoch [{epoch}] Evaluation, Avg Loss [{avg_loss:,.6f}], Avg Policy Loss [{avg_policy_loss:,.6f}], Avg Value Loss [{avg_value_loss:,.6f}], Rank Corr. [{rpt_rank_corr:,.3f}%]"
                             timer.report(report)
                         
                         # Saving

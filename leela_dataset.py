@@ -19,7 +19,7 @@ class LeelaDatasetReduced(TensorDataset):
             inputs.append(data["inputs"])
             policy.append(data["policy"])
             q.append(data["q"])
-            break
+            #break
 
         super().__init__(torch.cat(inputs), torch.cat(policy), torch.cat(q))
 

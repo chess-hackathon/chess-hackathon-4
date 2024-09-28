@@ -33,7 +33,7 @@ class LeelaZeroNet(nn.Module):
         super().__init__()
         self.device = device
         self.input_block = ConvBlock(
-            input_channels=112, filter_size=3, output_channels=num_filters
+            input_channels=19, filter_size=3, output_channels=num_filters
         )
         residual_blocks = OrderedDict(
             [
@@ -56,7 +56,7 @@ class LeelaZeroNet(nn.Module):
         self.q_ratio = q_ratio
 
     def forward(self, input_planes: torch.Tensor) -> ModelOutput:
-        flow = input_planes.reshape(-1, 112, 8, 8)
+        flow = input_planes.reshape(-1, 19, 8, 8)
         flow = self.input_block(flow)
         flow = self.residual_blocks(flow)
         policy_out = self.policy_head(flow)
@@ -84,7 +84,7 @@ class LeelaZeroNet(nn.Module):
             self.policy_loss_weight * p_loss
             + self.value_loss_weight * v_loss
         )
-        self.log("policy_loss", p_loss)
-        self.log("value_loss", v_loss)
-        self.log("total_loss", total_loss)
-        return total_loss
+        #print("policy_loss", p_loss)
+        #print("value_loss", v_loss)
+        #print("total_loss", total_loss)
+        return total_loss, policy_out, p_loss, value_out, v_loss
