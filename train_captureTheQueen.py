@@ -103,8 +103,8 @@ def main(args, timer):
     timer.report("Prepared model for distributed training")
 
     #loss_fn = nn.MSELoss()
-    #optimizer = Lamb(model.parameters(), lr=args.lr, weight_decay=args.wd)
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = Lamb(model.parameters(), lr=args.lr, weight_decay=args.wd)
+    #optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     metrics = {"train": MetricsTracker(), "test": MetricsTracker()}
 
     checkpoint_path = None
