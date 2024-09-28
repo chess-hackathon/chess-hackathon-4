@@ -5,4 +5,4 @@ gpus = 48
 output_path = "~/outputs/leela"
 dataset_id = "c30a192d-fbeb-4e6d-8214-2c3bbde89b95"
 compute_mode = "interruptible"
-command = "source ~/.chess/bin/activate && cd ~/chess-hackathon-4/ && torchrun --nnodes=$NNODES --nproc-per-node=$N_PROC --master_addr=$MASTER_ADDR --master_port=$MASTER_PORT --node_rank=$RANK train_captureTheQueen.py --bs 128 --lr 0.010 --load-path /root/outputs/leela/528a5cb3-77bc-4095-98c4-a05c420d7c61/latest_pt/checkpoint.pt"
+command = "source ~/.chess/bin/activate && cd ~/chess-hackathon-4/ && torchrun --nnodes=$NNODES --nproc-per-node=$N_PROC --master_addr=$MASTER_ADDR --master_port=$MASTER_PORT --node_rank=$RANK train_captureTheQueen.py --bs 128 --lr 0.01 --load-path /root/outputs/leela/b3a44048-5fd0-48d0-89d3-94d3c5307243/latest_pt/checkpoint.pt"
