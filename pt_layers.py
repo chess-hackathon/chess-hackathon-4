@@ -5,7 +5,6 @@ import lc0_az_policy_map
 
 
 class SqueezeExcitation(nn.Module):
-    # Tested as equivalent to the TF layer
     def __init__(self, channels, se_ratio):
         super().__init__()
         self.se_ratio = se_ratio

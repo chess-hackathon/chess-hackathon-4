@@ -28,7 +28,6 @@ class LeelaZeroNet(nn.Module):
         value_loss_weight,
         q_ratio,
         #optimizer,
-        learning_rate,
         device='cpu',
     ):
         super().__init__()
@@ -55,8 +54,6 @@ class LeelaZeroNet(nn.Module):
         self.policy_loss_weight = policy_loss_weight
         self.value_loss_weight = value_loss_weight
         self.q_ratio = q_ratio
-        self.learning_rate = learning_rate
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
 
     def forward(self, input_planes: torch.Tensor) -> ModelOutput:
         flow = input_planes.reshape(-1, 112, 8, 8)
@@ -91,7 +88,3 @@ class LeelaZeroNet(nn.Module):
         self.log("value_loss", v_loss)
         self.log("total_loss", total_loss)
         return total_loss
-
-    def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
-        return optimizer
