@@ -163,8 +163,10 @@ def main(args, timer):
                 train_dataloader.sampler.advance(len(inputs))
 
                 # How accurately do our model scores rank the batch of moves? 
-                if is_accum_batch or is_last_batch:
-                    rank_corr = spearmans_rho(value_out[:,0], q[:,0])
+                if False and (is_accum_batch or is_last_batch):
+                    x = value_out[:,0]
+                    y = q[:,0]
+                    rank_corr = spearmans_rho(x[y>0], y[y>0])
                 else:
                     rank_corr = 0
 
@@ -243,7 +245,10 @@ Avg Loss [{avg_loss:,.6f}], Avg Policy Loss [{avg_policy_loss:,.6f}], Avg Value 
                         test_dataloader.sampler.advance(len(inputs))
 
                         # How accurately do our model scores rank the batch of moves? 
-                        rank_corr = spearmans_rho(value_out[:,0], q[:,0])
+                        #rank_corr = spearmans_rho(value_out[:,0], q[:,0])
+                        x = value_out[:,0]
+                        y = q[:,0]
+                        rank_corr = spearmans_rho(x[y>0], y[y>0])
 
                         metrics["test"].update({
                             "examples_seen": len(inputs),
