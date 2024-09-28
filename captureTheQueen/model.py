@@ -230,7 +230,7 @@ class ConvolutionalPolicyHead(nn.Module):
         nn.init.xavier_normal_(self.conv.weight)
         self.fc1 = nn.parameter.Parameter(
             torch.tensor(
-                lc0_az_policy_map.make_map(), requires_grad=False, dtype=torch.float32
+                make_map(), requires_grad=False, dtype=torch.float32
             ),
             requires_grad=False,
         )
@@ -380,7 +380,7 @@ class Model(nn.Module):
                 tensor_input = torch.from_numpy(
                     board_to_leela_input(self.board).astype("float32")
                 )
-                policy_output, q = self.model.forward(tensor_input)
+                policy_output, q = self.forward(tensor_input)
                 policy = policy_output.numpy().flatten()
                 self.policy = leela_policy_to_uci_moves(policy, flip=(self.board.turn == chess.BLACK))
 
