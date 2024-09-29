@@ -361,8 +361,7 @@ class Model(nn.Module):
         value_out = self.value_head(flow)
         return ModelOutput(policy_out, value_out)
 
-
-    def score(self, pgn, move):
+    def score(self, pgn, move, policy_weight=0.8):
         '''
         pgn: string e.g. "1.e4 a6 2.Bc4 "
         move: string e.g. "a5 "
@@ -394,13 +393,92 @@ class Model(nn.Module):
 
         if uci_move not in self.policy:
             print("Very strange!  Can't recognize move: ", move, uci_move)
-        result = float(self.policy.get(uci_move, -1.0))
+        result1 = float(self.policy.get(uci_move, -1.0))
+        with torch.no_grad():
+            game = chess.pgn.read_game(io.StringIO(pgn))
+            board = chess.Board()
+            # catch board up on game to present
+            for past_move in list(game.mainline_moves()):
+                board.push(past_move)
+            board.push_san(move)
+ 
+            tensor_input = torch.from_numpy(
+                board_to_leela_input(board).astype("float32")
+            )
+            policy_output, q = self.forward(tensor_input)
+            policy = policy_output.numpy().flatten()
+            q = q.numpy().flatten()
+            #self.policy = leela_policy_to_uci_moves(policy, flip=(self.board.turn == chess.BLACK))
+            result2 = float(q[0] - q[2])
+
+        result = policy_weight * result1 + (1-policy_weight) * result2
         if DEBUG_OUTPUT:
-            print(uci_move, "->", result)
+                print(move, "->", result, result1, result2)
+
         return result
 
 
+    def prev_score(self, pgn, move, strategy="policy"):
+        '''
+        pgn: string e.g. "1.e4 a6 2.Bc4 "
+        move: string e.g. "a5 "
+        '''
 
+        if strategy == "policy":
+            if pgn != self.pgn:
+                with torch.no_grad():
+                    self.pgn = pgn
+                    game = chess.pgn.read_game(io.StringIO(pgn))
+                    self.board = chess.Board()
+                    # catch board up on game to present
+                    for past_move in list(game.mainline_moves()):
+                        self.board.push(past_move)
+                    
+                    tensor_input = torch.from_numpy(
+                        board_to_leela_input(self.board).astype("float32")
+                    )
+                    policy_output, q = self.forward(tensor_input)
+                    policy = policy_output.numpy().flatten()
+                    self.policy = leela_policy_to_uci_moves(policy, flip=(self.board.turn == chess.BLACK))
+
+                    if DEBUG_OUTPUT:
+                        print("Analyzed new board")
+                        print(self.board.unicode())
+                        print("Q: ", q)
+                        print("Best moves:", Counter(self.policy).most_common(5))
+            
+            uci_move = self.board.parse_san(move).uci()
+
+            if uci_move not in self.policy:
+                print("Very strange!  Can't recognize move: ", move, uci_move)
+            result = float(self.policy.get(uci_move, -1.0))
+            if DEBUG_OUTPUT:
+                print(uci_move, "->", result)
+            return result
+        if strategy == "q":
+            with torch.no_grad():
+                game = chess.pgn.read_game(io.StringIO(pgn))
+                self.board = chess.Board()
+                # catch board up on game to present
+                for past_move in list(game.mainline_moves()):
+                    self.board.push(past_move)
+                if pgn != self.pgn and DEBUG_OUTPUT:
+                    print("Analyzed new board")
+                    print(self.board.unicode())
+                self.pgn = pgn
+                self.board.push_san(move)
+     
+                tensor_input = torch.from_numpy(
+                    board_to_leela_input(self.board).astype("float32")
+                )
+                policy_output, q = self.forward(tensor_input)
+                policy = policy_output.numpy().flatten()
+                q = q.numpy().flatten()
+                #self.policy = leela_policy_to_uci_moves(policy, flip=(self.board.turn == chess.BLACK))
+                result = q[0] - q[2]
+                if DEBUG_OUTPUT:
+                    print(move, "->", result, q)
+                return float(result)
 
 
 

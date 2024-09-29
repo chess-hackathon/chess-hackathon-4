@@ -38,13 +38,14 @@ print("Outputs pass validation tests.")
 
 # testing gameplay
 model1 = Model(**model_config)
+model1.load_state_dict(checkpoint["model"])
 agent0, agent1 = Agent(model0), Agent(model1)
 gameplay_kwargs = {
     "agents": {'white': agent0, 'black': agent1},
     "teams": {'white': 'Team White', 'black': 'Team Black'},
     "max_moves": 20,
     "min_seconds_per_move": 0.0,
-    "verbose": False,
+    "verbose": True,
     "poseval": False,
     "image_path": None
 }
