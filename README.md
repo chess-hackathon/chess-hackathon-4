@@ -1,3 +1,52 @@
+# Knowledge distillation from Leela Chess Zero (captureTheQueen model)
+
+## Explanation
+
+Based on minimal_lczero, tries to recreate the AI from Leela Chess Zero.  Loads binary files downloaded from Leela that contain training games along with the raw output of the Leela chess engine, which is what the network tries to learn to mimic.
+
+
+## Training
+
+### Starting with Leela tar files
+
+Tar files that can either be downloaded from [LC0](https://storage.lczero.org/files/training_data/test80/) and unzipped, or loaded from [s3://chess-hackathon-lc0-reduced](s3://chess-hackathon-lc0-tars)
+
+`raw_leela_dataset.py` provides an iterable dataset, but the throughput is low, and it is hard to shard since there isn't a known length.  This is since it has to untar and decompress binary files, extract out the bits that are relevant, 
+
+Instead it can be run to load files from `~/Data/lc0_tars` and write simple binary files to `~/Data/lc0_filtered`
+
+### Starting with processed pt files
+
+These files can either be generated as above, or loaded from [s3://chess-hackathon-lc0-reduced](s3://chess-hackathon-lc0-reduced)
+
+`leela_dataset.py` provides a TensorDataset that can load these files.
+
+Run `train_captureTheQueen.py` or `captureTheQueen.isc` to perform a training run.
+
+The model itself is implemented in 
+* pt_net.py
+* pt_train.py
+* py_layers.py
+* pt_losses.py
+
+## Playing
+
+Training can be done without understanding chess, but in order to apply the trained model two things need to be done:
+* The policy output tensor needs to be mapped to moves (see policy_index.py and lc0_az_policy_map.py)
+* The chess board state needs to be converted into LC0's planes format.
+
+./captureTheQueen/model.py has the model collected into a single file that can play in the tournament (and ./captureTheQueen/model_config.yaml).
+
+
+
+
+
+# Original hackathon documentation
+
+
+
+
+
 # chess-hackathon-4
 
 ## Quick Start Guide
