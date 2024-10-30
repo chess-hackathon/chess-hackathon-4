@@ -2,7 +2,7 @@
 
 ## Explanation
 
-Based on minimal_lczero, tries to recreate the AI from Leela Chess Zero.  Loads binary files downloaded from Leela that contain training games along with the raw output of the Leela chess engine, which is what the network tries to learn to mimic.
+Based on [minimal_lczero](https://github.com/Rocketknight1/minimal_lczero), tris to recreate the AI from Leela Chess Zero.  Loads binary files downloaded from Leela that contain training games along with the raw output of the Leela chess engine, which is what the network tries to learn to mimic.
 
 
 ## Training
